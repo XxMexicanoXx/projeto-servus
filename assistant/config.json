@@ -1,0 +1,65 @@
+{
+  "general": {
+    "language": "pt",
+    "log_level": "INFO",
+    "start_listening_on_launch": true,
+    "show_tray_icon": true,
+    "exit_phrases": [
+      "sair do assistente",
+      "encerrar assistente",
+      "fechar assistente"
+    ]
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "device_index": null,
+    "silence_threshold_rms": 0.012,
+    "silence_duration_seconds": 0.8,
+    "max_phrase_seconds": 12.0,
+    "min_phrase_seconds": 0.4,
+    "pre_roll_seconds": 0.3
+  },
+  "stt": {
+    "engine": "faster-whisper",
+    "model_size": "small",
+    "device": "auto",
+    "compute_type": "int8",
+    "beam_size": 1,
+    "vad_filter": true
+  },
+  "tts": {
+    "engine": "pyttsx3",
+    "rate": 185,
+    "volume": 1.0,
+    "voice_substring": "portuguese"
+  },
+  "intents": {
+    "confidence_threshold": 0.55,
+    "use_llm_fallback": false
+  },
+  "llm": {
+    "provider": "ollama",
+    "endpoint": "http://localhost:11434",
+    "model": "llama3.1:8b-instruct-q4_K_M",
+    "timeout_seconds": 30
+  },
+  "actions": {
+    "programs": {
+      "chrome": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      "bloco de notas": "notepad.exe",
+      "notepad": "notepad.exe",
+      "calculadora": "calc.exe",
+      "explorador": "explorer.exe",
+      "spotify": "%APPDATA%/Spotify/Spotify.exe"
+    },
+    "default_folder": "%USERPROFILE%/Documents/Assistente",
+    "allow_shutdown": true,
+    "shutdown_delay_seconds": 30,
+    "allow_keyboard_automation": true
+  },
+  "wake_word": {
+    "enabled": false,
+    "phrase": "jarvis"
+  }
+}

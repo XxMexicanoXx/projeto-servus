@@ -1,0 +1,23 @@
+# --- Núcleo do assistente ---
+faster-whisper>=1.0.3,<2.0
+sounddevice>=0.4.6,<1.0
+numpy>=1.24,<3.0
+
+# --- Síntese de voz (offline) ---
+pyttsx3>=2.90,<3.0
+# Backend SAPI5 do Windows
+pywin32>=306; sys_platform == "win32"
+comtypes>=1.2.0; sys_platform == "win32"
+
+# --- System tray ---
+pystray>=0.19.5,<1.0
+Pillow>=10.0,<12.0
+
+# --- Automação opcional (digitar, volume) ---
+pyautogui>=0.9.54,<1.0
+
+# --- LLM fallback opcional (Ollama) ---
+requests>=2.31,<3.0
+
+# --- Build do executável ---
+pyinstaller>=6.6,<7.0
