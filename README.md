@@ -93,6 +93,51 @@ pyinstaller assistant.spec --clean --noconfirm
 
 ---
 
+## Pacote de instalação (.exe instalável)
+
+Para distribuir aos usuários finais, o repo já vem com um script
+[Inno Setup](https://jrsoftware.org/isinfo.php) que empacota o `.exe` num
+**instalador padrão Windows** (`VozAssistente-Setup-1.0.0.exe`).
+
+**Pré-requisito (uma vez):** instale o
+[Inno Setup 6](https://jrsoftware.org/isdl.php) — aceita o local default
+`C:\Program Files (x86)\Inno Setup 6`.
+
+Build de tudo (PyInstaller + instalador) com um comando:
+
+```cmd
+build_installer.bat
+```
+
+Saída: `installer_output\VozAssistente-Setup-1.0.0.exe`.
+
+O instalador faz:
+
+- Instala em `%ProgramFiles%\VozAssistente\` (sem privilégios de admin —
+  `lowest`; promove para admin se o usuário escolher "All Users")
+- Cria atalho no **Menu Iniciar**
+- (Opcional) Atalho na **Área de Trabalho**
+- (Opcional) **Iniciar com o Windows** (entrada em `shell:startup`)
+- Cria entrada **"VozAssistente (Editar configuração)"** no Menu Iniciar que
+  abre `%APPDATA%\VozAssistente\config.json` no Notepad
+- Copia o `config.json` padrão para `%APPDATA%\VozAssistente\config.json`
+  **somente se ainda não existir** — sua personalização não é sobrescrita em
+  upgrades
+- Registra um **desinstalador** acessível em
+  *Configurações → Apps → VozAssistente*
+
+**Hierarquia de busca do config (após instalado):**
+
+1. `%APPDATA%\VozAssistente\config.json` ← editável; é o que o instalador grava
+2. `<pasta do .exe>\config.json` (modo portátil)
+3. `<pasta do .exe>\assistant\config.json` (modo dev)
+4. Default embutido
+
+Para mudar a versão do instalador, edite `MyAppVersion` no topo de
+[`installer.iss`](installer.iss).
+
+---
+
 ## Configuração (`config.json`)
 
 Procurado em (na ordem):

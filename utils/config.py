@@ -3,11 +3,11 @@
 A pesquisa do arquivo segue esta ordem:
 1. Argumento explícito ``path``
 2. Variável de ambiente ``VOZ_ASSISTENTE_CONFIG``
-3. ``./config.json`` ao lado do executável (PyInstaller usa ``sys._MEIPASS`` para
-   recursos empacotados, mas o config deve ficar **fora** do bundle para ser
-   editável; aqui pegamos o diretório do executável real)
-4. ``./assistant/config.json`` (modo dev)
-5. Default embutido
+3. ``%APPDATA%/VozAssistente/config.json`` (Windows — config do usuário,
+   editável; é onde o instalador grava a cópia inicial)
+4. ``./config.json`` ao lado do executável (modo portátil)
+5. ``./assistant/config.json`` (modo dev)
+6. Default embutido
 """
 
 from __future__ import annotations
@@ -97,6 +97,16 @@ def _executable_dir() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def _user_config_dir() -> Optional[Path]:
+    """Diretório do config do usuário (gravável)."""
+    if os.name == "nt":
+        base = os.environ.get("APPDATA")
+        if base:
+            return Path(base) / "VozAssistente"
+        return None
+    return Path.home() / ".config" / "voz-assistente"
+
+
 def _candidate_paths(explicit: Optional[str]) -> list[Path]:
     paths: list[Path] = []
     if explicit:
@@ -104,6 +114,9 @@ def _candidate_paths(explicit: Optional[str]) -> list[Path]:
     env = os.environ.get("VOZ_ASSISTENTE_CONFIG")
     if env:
         paths.append(Path(env).expanduser())
+    user_dir = _user_config_dir()
+    if user_dir is not None:
+        paths.append(user_dir / "config.json")
     exe_dir = _executable_dir()
     paths.append(exe_dir / "config.json")
     paths.append(exe_dir / "assistant" / "config.json")
