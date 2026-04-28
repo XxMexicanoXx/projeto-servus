@@ -11,7 +11,7 @@
 ; ============================================================================
 
 #define MyAppName        "VozAssistente"
-#define MyAppVersion     "1.0.0"
+#define MyAppVersion     "1.1.0"
 #define MyAppPublisher   "Nicolas Victor"
 #define MyAppExeName     "VozAssistente.exe"
 #define MyAppId          "{{B5C9D8A2-7E4F-4F6B-9A1A-1234ABCD5678}"
@@ -52,6 +52,9 @@ Name: "startupicon"; Description: "Iniciar o {#MyAppName} junto com o Windows"; 
 
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; Modelo de voz Piper (pt-BR masculina) — fica ao lado do .exe
+Source: "voices\*.onnx";      DestDir: "{app}\voices"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "voices\*.onnx.json"; DestDir: "{app}\voices"; Flags: ignoreversion skipifsourcedoesntexist
 ; Copia o config padrão para um arquivo "modelo" ao lado do exe (para fallback portátil)
 Source: "assistant\config.json"; DestDir: "{app}"; DestName: "config.default.json"; Flags: ignoreversion
 ; A cópia editável vai para %APPDATA%\VozAssistente\config.json — feita só se não existir

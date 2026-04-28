@@ -36,7 +36,8 @@ combinar com sua máquina.
 ## Recursos
 
 - **STT offline** com [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) (modelo configurável: `tiny`/`base`/`small`/`medium`)
-- **TTS offline** via `pyttsx3` (SAPI5 no Windows, escolhe voz pt-BR automaticamente)
+- **TTS offline neural** via [Piper TTS](https://github.com/rhasspy/piper) (voz pt-BR masculina natural — `faber`); cai automaticamente para `pyttsx3`/SAPI5 se Piper falhar
+- **Onboarding** no primeiro uso pergunta o nome do usuário e usa nas saudações ("Olá Nicolas!"). Para mudar depois, fale "mude meu nome para X"
 - **VAD por energia** (RMS) com pré-roll — captura frases naturalmente, sem hotkey
 - **Intents determinísticos** (regex) com ponto de extensão para LLM local
 - **System tray** com menu (status, pausar/retomar escuta, sair)
@@ -209,7 +210,9 @@ Campos principais:
 | `audio.silence_threshold_rms`      | Limiar de silêncio (0–1). Aumente em ambientes com ruído                 |
 | `stt.model_size`                   | `tiny` / `base` / `small` / `medium`                                     |
 | `stt.compute_type`                 | `int8` (CPU rápido), `int8_float16` (GPU), `float16`, `float32`          |
-| `tts.voice_substring`              | Substring para escolher voz (ex: `"portuguese"`, `"maria"`, `"daniel"`) |
+| `tts.engine`                       | `"auto"` (Piper → pyttsx3), `"piper"` ou `"pyttsx3"`                     |
+| `tts.piper_model`                  | Caminho do `.onnx` Piper. `null` = busca em `voices/` do app             |
+| `tts.voice_substrings`             | Lista ordenada de substrings para escolher voz pyttsx3 (ex: `["daniel"]`)|
 | `actions.programs`                 | Mapa `nome -> caminho.exe` (suporta `%APPDATA%`, `%USERPROFILE%`)        |
 | `actions.default_folder`           | Pasta padrão para criar/mover/deletar arquivos                           |
 | `actions.allow_shutdown`           | Permitir desligar/reiniciar via voz                                      |

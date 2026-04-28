@@ -17,6 +17,10 @@ dist/
 # Inno Setup output
 installer_output/
 
+# Modelos de voz Piper (baixados em CI / não comitar binários grandes)
+voices/*.onnx
+voices/*.onnx.json
+
 # Logs
 *.log
 logs/

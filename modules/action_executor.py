@@ -26,6 +26,7 @@ from utils.config import expand_path
 from utils.logger import get_logger
 
 from .intent_parser import Intent
+from .user_profile import UserProfile, sanitize_name
 
 logger = get_logger(__name__)
 
@@ -64,10 +65,14 @@ class ActionExecutor:
         config: ActionConfig,
         on_request_exit: Optional[Callable[[], None]] = None,
         on_request_pause: Optional[Callable[[], None]] = None,
+        user_profile: Optional[UserProfile] = None,
+        on_profile_changed: Optional[Callable[[], None]] = None,
     ):
         self.config = config
         self._on_request_exit = on_request_exit
         self._on_request_pause = on_request_pause
+        self.profile = user_profile or UserProfile()
+        self._on_profile_changed = on_profile_changed
         self._handlers: Dict[str, Callable[[Intent], str]] = {
             "abrir_programa": self._abrir_programa,
             "fechar_programa": self._fechar_programa,
@@ -87,8 +92,15 @@ class ActionExecutor:
             "saudacao": self._saudacao,
             "que_horas": self._que_horas,
             "que_data": self._que_data,
+            "mudar_nome": self._mudar_nome,
+            "qual_meu_nome": self._qual_meu_nome,
             "desconhecido": self._desconhecido,
         }
+
+    def _vocative(self) -> str:
+        """Retorna ', <nome>' se houver nome, senão string vazia."""
+        name = self.profile.display_name
+        return f", {name}" if name else ""
 
     # ------------------------------------------------------------------ dispatch
     def execute(self, intent: Intent) -> str:
@@ -335,7 +347,7 @@ class ActionExecutor:
     def _sair_assistente(self, intent: Intent) -> str:
         if self._on_request_exit is not None:
             threading.Timer(0.5, self._on_request_exit).start()
-        return "Encerrando o assistente. Até logo."
+        return f"Encerrando o assistente{self._vocative()}. Até logo."
 
     def _pausar_escuta(self, intent: Intent) -> str:
         if self._on_request_pause is not None:
@@ -344,11 +356,14 @@ class ActionExecutor:
         return "Não consigo pausar agora."
 
     def _saudacao(self, intent: Intent) -> str:
+        name = self.profile.display_name
+        if name:
+            return f"Olá {name}! Como posso ajudar?"
         return "Olá! Como posso ajudar?"
 
     def _que_horas(self, intent: Intent) -> str:
         now = datetime.datetime.now()
-        return f"Agora são {now.strftime('%H horas e %M minutos')}."
+        return f"Agora são {now.strftime('%H horas e %M minutos')}{self._vocative()}."
 
     def _que_data(self, intent: Intent) -> str:
         now = datetime.datetime.now()
@@ -357,6 +372,24 @@ class ActionExecutor:
             "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
         ]
         return f"Hoje é {now.day} de {meses[now.month - 1]} de {now.year}."
+
+    def _mudar_nome(self, intent: Intent) -> str:
+        novo = intent.slots.get("nome", "").strip()
+        cleaned = sanitize_name(novo)
+        if cleaned is None:
+            return "Não entendi o novo nome. Tente: mude meu nome para Nicolas."
+        self.profile.name = cleaned
+        self.profile.nickname = cleaned
+        self.profile.has_completed_onboarding = True
+        if self._on_profile_changed is not None:
+            self._on_profile_changed()
+        return f"Combinado, vou te chamar de {cleaned} a partir de agora."
+
+    def _qual_meu_nome(self, intent: Intent) -> str:
+        name = self.profile.display_name
+        if name:
+            return f"Você é {name}."
+        return "Ainda não sei seu nome. Diga: meu nome é Nicolas."
 
     def _desconhecido(self, intent: Intent) -> str:
         raw = intent.slots.get("raw") or intent.raw_text

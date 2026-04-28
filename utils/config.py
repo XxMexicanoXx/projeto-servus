@@ -35,10 +35,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "sample_rate": 16000,
         "channels": 1,
         "device_index": None,
-        "silence_threshold_rms": 0.012,
-        "silence_duration_seconds": 0.8,
+        "silence_threshold_rms": 0.02,
+        "silence_duration_seconds": 0.9,
         "max_phrase_seconds": 12.0,
-        "min_phrase_seconds": 0.4,
+        "min_phrase_seconds": 0.35,
         "pre_roll_seconds": 0.3,
     },
     "stt": {
@@ -50,10 +50,12 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "vad_filter": True,
     },
     "tts": {
-        "engine": "pyttsx3",
+        "engine": "auto",
         "rate": 185,
         "volume": 1.0,
-        "voice_substring": "portuguese",
+        "piper_model": None,
+        "piper_speaker_id": None,
+        "voice_substrings": ["daniel", "portuguese (brazil)", "portuguese", "pt-br", "pt_br"],
     },
     "intents": {
         "confidence_threshold": 0.55,

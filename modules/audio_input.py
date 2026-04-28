@@ -67,8 +67,8 @@ class AudioInput:
         self._block_queue: "queue.Queue[np.ndarray]" = queue.Queue(maxsize=200)
         self._stream = None
         self._running = False
-        self._paused = threading.Event()
-        self._paused.set()  # set = listening, clear = paused
+        self._user_paused = False
+        self._tts_paused = False
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ lifecycle
@@ -131,18 +131,32 @@ class AudioInput:
 
     # ------------------------------------------------------------------ control
     def pause(self) -> None:
-        """Para de produzir frases (mas mantém o stream aberto)."""
+        """Pausa pelo usuário (tray ou comando de voz)."""
         with self._lock:
-            self._paused.clear()
-            logger.info("Escuta pausada.")
+            self._user_paused = True
+        logger.info("Escuta pausada (usuário).")
 
     def resume(self) -> None:
         with self._lock:
-            self._paused.set()
-            logger.info("Escuta retomada.")
+            self._user_paused = False
+        logger.info("Escuta retomada (usuário).")
+
+    def pause_for_tts(self) -> None:
+        """Pausa enquanto o assistente está falando (evita auto-feedback)."""
+        with self._lock:
+            self._tts_paused = True
+
+    def resume_from_tts(self) -> None:
+        with self._lock:
+            self._tts_paused = False
 
     def is_paused(self) -> bool:
-        return not self._paused.is_set()
+        with self._lock:
+            return self._user_paused or self._tts_paused
+
+    def is_user_paused(self) -> bool:
+        with self._lock:
+            return self._user_paused
 
     # ------------------------------------------------------------------ stream
     def _on_block(self, indata, frames, time_info, status) -> None:
@@ -187,7 +201,7 @@ class AudioInput:
             except queue.Empty:
                 continue
 
-            if not self._paused.is_set():
+            if self.is_paused():
                 pre_roll.clear()
                 recording.clear()
                 in_phrase = False

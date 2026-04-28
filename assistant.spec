@@ -25,9 +25,21 @@ datas += collect_data_files("faster_whisper")
 binaries += collect_dynamic_libs("ctranslate2")
 datas += collect_data_files("ctranslate2")
 
+# Piper TTS — coleta libs e dados do piper / piper_phonemize / onnxruntime
+for _pkg in ("piper", "piper_phonemize", "onnxruntime"):
+    try:
+        datas += collect_data_files(_pkg)
+        binaries += collect_dynamic_libs(_pkg)
+    except Exception:
+        pass
+
 # config.json fica embutido no bundle como fallback; o usuário pode colocar
 # um config.json ao lado do .exe para sobrescrever (ver utils/config.py).
 datas += [(str(ROOT / "assistant" / "config.json"), "assistant")]
+
+# NOTA: o modelo de voz Piper (.onnx + .onnx.json, ~60MB) NÃO é embutido no .exe
+# para manter o startup rápido. O installer.iss copia esses arquivos para
+# `<dir do exe>/voices/`, e o loader em modules/text_to_speech.py procura lá.
 
 hidden_imports = [
     "pyttsx3.drivers",
@@ -38,6 +50,12 @@ hidden_imports = [
     "comtypes.stream",
     "PIL._tkinter_finder",
     "pystray._win32",
+    "piper",
+    "piper.voice",
+    "piper_phonemize",
+    "onnxruntime",
+    "tkinter",
+    "tkinter.ttk",
 ]
 
 
@@ -51,7 +69,6 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        "tkinter",
         "matplotlib",
         "scipy",
         "PyQt5",
