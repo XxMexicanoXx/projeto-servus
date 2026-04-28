@@ -11,7 +11,7 @@
 ; ============================================================================
 
 #define MyAppName        "VozAssistente"
-#define MyAppVersion     "1.1.0"
+#define MyAppVersion     "1.2.0"
 #define MyAppPublisher   "Nicolas Victor"
 #define MyAppExeName     "VozAssistente.exe"
 #define MyAppId          "{{B5C9D8A2-7E4F-4F6B-9A1A-1234ABCD5678}"

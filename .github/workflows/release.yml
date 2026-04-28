@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão do instalador (ex: 1.1.0). Sem prefixo 'v'."
+        description: "Versão do instalador (ex: 1.2.0). Sem prefixo 'v'."
         required: false
-        default: "1.1.0"
+        default: "1.2.0"
 
 permissions:
   contents: write

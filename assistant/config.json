@@ -1,9 +1,11 @@
 {
+  "config_schema_version": 3,
   "general": {
     "language": "pt",
     "log_level": "INFO",
     "start_listening_on_launch": true,
     "show_tray_icon": true,
+    "beep_on_capture": true,
     "exit_phrases": [
       "sair do assistente",
       "encerrar assistente",
@@ -22,11 +24,14 @@
   },
   "stt": {
     "engine": "faster-whisper",
-    "model_size": "small",
+    "model_size": "base",
     "device": "auto",
     "compute_type": "int8",
     "beam_size": 1,
-    "vad_filter": true
+    "vad_filter": true,
+    "initial_prompt": "Comandos para um assistente em português brasileiro.",
+    "no_speech_threshold": 0.6,
+    "log_probability_threshold": -1.0
   },
   "tts": {
     "engine": "auto",
@@ -38,13 +43,15 @@
   },
   "intents": {
     "confidence_threshold": 0.55,
-    "use_llm_fallback": false
+    "use_llm_fallback": true
   },
   "llm": {
-    "provider": "ollama",
-    "endpoint": "http://localhost:11434",
-    "model": "llama3.1:8b-instruct-q4_K_M",
-    "timeout_seconds": 30
+    "provider": "groq",
+    "endpoint": null,
+    "model": "llama-3.1-8b-instant",
+    "api_key": null,
+    "api_key_env": "GROQ_API_KEY",
+    "timeout_seconds": 10
   },
   "actions": {
     "programs": {
@@ -61,7 +68,9 @@
     "allow_keyboard_automation": true
   },
   "wake_word": {
-    "enabled": false,
-    "phrase": "jarvis"
+    "enabled": true,
+    "phrase": "servus",
+    "require_prefix": false,
+    "aliases": []
   }
 }

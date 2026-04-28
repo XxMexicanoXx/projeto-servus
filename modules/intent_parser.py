@@ -11,7 +11,6 @@ consome os intents e executa as ações.
 
 from __future__ import annotations
 
-import json
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -280,7 +279,7 @@ def _build_rules() -> List[_Rule]:
 
 # --------------------------------------------------------------------------- parser
 class IntentParser:
-    """Combina regras determinísticas + (opcional) LLM local."""
+    """Combina regras determinísticas + LLM (Groq/OpenAI/Ollama) como fallback."""
 
     def __init__(
         self,
@@ -292,6 +291,24 @@ class IntentParser:
         self.use_llm_fallback = use_llm_fallback
         self.llm_config = llm_config or {}
         self.rules = _build_rules()
+        self._llm = None
+        if self.use_llm_fallback:
+            from .llm_client import LLMClient, LLMConfig
+
+            self._llm = LLMClient(LLMConfig.from_dict(self.llm_config))
+            if self._llm.is_configured():
+                logger.info(
+                    "LLM fallback habilitado: provider=%s model=%s",
+                    self._llm.config.provider,
+                    self._llm.config.model,
+                )
+            else:
+                logger.warning(
+                    "LLM fallback habilitado mas sem chave de API "
+                    "(provider=%s, env=%s). Defina a chave no config ou variável de ambiente.",
+                    self._llm.config.provider,
+                    self._llm.config.api_key_env,
+                )
 
     # ------------------------------------------------------------------ public
     def parse(self, text: str) -> Optional[Intent]:
@@ -317,58 +334,15 @@ class IntentParser:
                     raw_text=text,
                 )
 
-        if self.use_llm_fallback:
-            llm_intent = self._llm_fallback(text)
-            if llm_intent is not None:
-                return llm_intent
+        if self._llm is not None and self._llm.is_configured():
+            result = self._llm.classify(text)
+            if result is not None and result.intent and result.intent != "desconhecido":
+                logger.info("LLM intent: %s slots=%s", result.intent, result.slots)
+                return Intent(
+                    name=result.intent,
+                    slots={**result.slots, "_llm_response": result.response} if result.response else dict(result.slots),
+                    confidence=0.7,
+                    raw_text=text,
+                )
 
         return Intent(name="desconhecido", slots={"raw": text}, confidence=0.0, raw_text=text)
-
-    # ------------------------------------------------------------------ llm hook
-    def _llm_fallback(self, text: str) -> Optional[Intent]:
-        """Hook de extensão futura. Mantém a app funcional sem rede.
-
-        A implementação default chama um endpoint compatível com a API do Ollama
-        (``/api/generate``) e espera JSON estruturado de volta. Falhas são
-        tratadas silenciosamente — o assistente cai de volta no intent
-        ``desconhecido``.
-        """
-        endpoint = self.llm_config.get("endpoint", "http://localhost:11434")
-        model = self.llm_config.get("model", "llama3.1:8b-instruct-q4_K_M")
-        timeout = float(self.llm_config.get("timeout_seconds", 30))
-
-        prompt = (
-            "Você é um classificador de intents para um assistente em português.\n"
-            "Responda SOMENTE com JSON {\"intent\": <nome>, \"slots\": {...}}.\n"
-            "Intents válidos: abrir_programa, fechar_programa, criar_pasta, "
-            "criar_arquivo, deletar_pasta, deletar_arquivo, mover, "
-            "desligar_computador, reiniciar_computador, cancelar_desligamento, "
-            "buscar_web, digitar, volume, sair_assistente, pausar_escuta, "
-            "saudacao, que_horas, que_data, desconhecido.\n"
-            f"Frase: {text!r}\n"
-        )
-
-        try:
-            import requests  # type: ignore
-
-            response = requests.post(
-                f"{endpoint.rstrip('/')}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False, "format": "json"},
-                timeout=timeout,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            content = payload.get("response", "")
-            data = json.loads(content)
-            name = data.get("intent")
-            if not name or name == "desconhecido":
-                return None
-            return Intent(
-                name=name,
-                slots=dict(data.get("slots") or {}),
-                confidence=0.6,
-                raw_text=text,
-            )
-        except Exception as exc:
-            logger.debug("LLM fallback indisponível: %s", exc)
-            return None

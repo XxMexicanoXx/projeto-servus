@@ -356,6 +356,10 @@ class ActionExecutor:
         return "Não consigo pausar agora."
 
     def _saudacao(self, intent: Intent) -> str:
+        # Quando vem do LLM com resposta natural, usamos ela
+        llm_resp = intent.slots.get("_llm_response")
+        if llm_resp:
+            return str(llm_resp)
         name = self.profile.display_name
         if name:
             return f"Olá {name}! Como posso ajudar?"

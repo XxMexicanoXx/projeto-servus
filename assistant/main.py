@@ -32,7 +32,11 @@ if str(_ROOT) not in sys.path:
 from modules.action_executor import ActionConfig, ActionExecutor  # noqa: E402
 from modules.audio_input import AudioConfig, AudioInput, MicrophoneError  # noqa: E402
 from modules.intent_parser import IntentParser  # noqa: E402
-from modules.onboarding import run_onboarding_if_needed  # noqa: E402
+from modules.onboarding import (  # noqa: E402
+    run_onboarding_if_needed,
+    request_groq_api_key,
+)
+from modules.wake_word import WakeWordMatcher  # noqa: E402
 from modules.speech_to_text import SpeechToText, STTConfig, STTError  # noqa: E402
 from modules.text_to_speech import TextToSpeech, TTSConfig  # noqa: E402
 from modules.user_profile import UserProfile, load_profile, save_profile  # noqa: E402
@@ -98,6 +102,17 @@ class Assistant:
             for phrase in config.get("general", {}).get("exit_phrases", [])
         ]
 
+        wake_cfg = config.get("wake_word", {}) or {}
+        self._wake = WakeWordMatcher(
+            phrase=str(wake_cfg.get("phrase", "servus")),
+            enabled=bool(wake_cfg.get("enabled", True)),
+            require_prefix=bool(wake_cfg.get("require_prefix", False)),
+            extra_aliases=tuple(wake_cfg.get("aliases", []) or ()),
+        )
+        self._beep_on_capture = bool(
+            config.get("general", {}).get("beep_on_capture", True)
+        )
+
     def _save_profile(self) -> None:
         try:
             save_profile(self.profile)
@@ -136,6 +151,11 @@ class Assistant:
             )
             return 2
 
+        try:
+            self.audio.run_mic_diagnostic(seconds=1.0)
+        except Exception:
+            self.logger.exception("Falha no diagnóstico de microfone (não-fatal).")
+
         if not self.config.get("general", {}).get("start_listening_on_launch", True):
             self.audio.pause()
 
@@ -145,10 +165,13 @@ class Assistant:
         worker.start()
 
         greeting_name = self.profile.display_name
+        wake_hint = ""
+        if self._wake.enabled:
+            wake_hint = f" Diga {self._wake.phrase} antes de cada comando."
         if greeting_name:
-            self.tts.speak(f"Olá {greeting_name}, assistente pronto.")
+            self.tts.speak(f"Olá {greeting_name}, assistente pronto.{wake_hint}")
         else:
-            self.tts.speak("Assistente pronto.")
+            self.tts.speak(f"Assistente pronto.{wake_hint}")
 
         if self.config.get("general", {}).get("show_tray_icon", True):
             self._run_tray_blocking()  # bloqueia na main thread (requirement do pystray)
@@ -201,12 +224,28 @@ class Assistant:
             self._set_state(AssistantState.ERROR)
 
     def _handle_text(self, text: str) -> None:
+        self.logger.info("Frase capturada: %r", text)
+        if self._beep_on_capture:
+            self.audio.play_capture_beep()
+
         lowered = text.lower().strip()
         for phrase in self._exit_phrases:
             if phrase and phrase in lowered:
                 self.tts.speak("Encerrando o assistente.")
                 self.request_exit()
                 return
+
+        if self._wake.enabled:
+            stripped = self._wake.match(text)
+            if stripped is None:
+                self.logger.info("Wake word ausente em %r — ignorando.", text)
+                return
+            text = stripped
+            self.logger.info("Wake word detectada; comando: %r", text)
+
+        if not text.strip():
+            self.tts.speak("Sim?")
+            return
 
         intent = self.parser.parse(text)
         if intent is None:
@@ -380,6 +419,29 @@ def main(argv: Optional[list[str]] = None) -> int:
             profile = run_onboarding_if_needed(profile)
         except Exception:
             logger.exception("Erro durante onboarding — seguindo sem nome.")
+
+        # Pede a chave do Groq se ainda não houver e o LLM estiver habilitado
+        try:
+            llm_cfg = config.get("llm", {}) or {}
+            api_key_env = llm_cfg.get("api_key_env", "GROQ_API_KEY")
+            already = bool(llm_cfg.get("api_key")) or bool(os.environ.get(api_key_env))
+            if (
+                config.get("intents", {}).get("use_llm_fallback", False)
+                and not already
+                and not profile.skip_groq_prompt
+            ):
+                key = request_groq_api_key()
+                if key:
+                    from utils.config import save_user_config_field
+
+                    save_user_config_field(["llm", "api_key"], key)
+                    config.setdefault("llm", {})["api_key"] = key
+                    logger.info("Chave Groq salva em %%APPDATA%%/VozAssistente/config.json")
+                else:
+                    profile.skip_groq_prompt = True
+                    save_profile(profile)
+        except Exception:
+            logger.exception("Falha pedindo chave da API do Groq (não-fatal).")
 
     assistant = Assistant(config, profile=profile)
     return assistant.run()

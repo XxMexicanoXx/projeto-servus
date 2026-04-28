@@ -56,6 +56,10 @@ hidden_imports = [
     "onnxruntime",
     "tkinter",
     "tkinter.ttk",
+    "requests",
+    "urllib3",
+    "charset_normalizer",
+    "winsound",
 ]
 
 

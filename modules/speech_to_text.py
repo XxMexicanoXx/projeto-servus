@@ -21,23 +21,29 @@ logger = get_logger(__name__)
 @dataclass
 class STTConfig:
     engine: str = "faster-whisper"
-    model_size: str = "small"
+    model_size: str = "base"
     device: str = "auto"  # "auto" | "cpu" | "cuda"
     compute_type: str = "int8"  # int8 | int8_float16 | float16 | float32
     beam_size: int = 1
     vad_filter: bool = True
     language: str = "pt"
+    initial_prompt: Optional[str] = None
+    no_speech_threshold: float = 0.6
+    log_probability_threshold: float = -1.0
 
     @classmethod
     def from_dict(cls, data: dict, language: str = "pt") -> "STTConfig":
         return cls(
             engine=str(data.get("engine", "faster-whisper")),
-            model_size=str(data.get("model_size", "small")),
+            model_size=str(data.get("model_size", "base")),
             device=str(data.get("device", "auto")),
             compute_type=str(data.get("compute_type", "int8")),
             beam_size=int(data.get("beam_size", 1)),
             vad_filter=bool(data.get("vad_filter", True)),
             language=language,
+            initial_prompt=data.get("initial_prompt"),
+            no_speech_threshold=float(data.get("no_speech_threshold", 0.6)),
+            log_probability_threshold=float(data.get("log_probability_threshold", -1.0)),
         )
 
 
@@ -121,8 +127,22 @@ class SpeechToText:
                     beam_size=self.config.beam_size,
                     vad_filter=self.config.vad_filter,
                     condition_on_previous_text=False,
+                    initial_prompt=self.config.initial_prompt,
+                    no_speech_threshold=self.config.no_speech_threshold,
+                    log_prob_threshold=self.config.log_probability_threshold,
                 )
-                text_parts = [seg.text for seg in segments]
+                segments = list(segments)
+                # Filtra alucinações: segmentos com no_speech_prob alta são ignorados
+                useful = [
+                    s for s in segments
+                    if getattr(s, "no_speech_prob", 0.0) < self.config.no_speech_threshold
+                ]
+                if not useful and segments:
+                    logger.info(
+                        "STT descartou %d segmento(s) por no_speech_prob alta (>= %.2f)",
+                        len(segments), self.config.no_speech_threshold,
+                    )
+                text_parts = [seg.text for seg in useful]
             except Exception as exc:
                 logger.exception("Falha na transcrição: %s", exc)
                 return ""

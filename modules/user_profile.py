@@ -25,6 +25,7 @@ class UserProfile:
     name: Optional[str] = None
     nickname: Optional[str] = None
     has_completed_onboarding: bool = False
+    skip_groq_prompt: bool = False
 
     @property
     def display_name(self) -> Optional[str]:
@@ -55,6 +56,7 @@ def load_profile() -> UserProfile:
             name=data.get("name"),
             nickname=data.get("nickname"),
             has_completed_onboarding=bool(data.get("has_completed_onboarding", False)),
+            skip_groq_prompt=bool(data.get("skip_groq_prompt", False)),
         )
     except (OSError, json.JSONDecodeError) as exc:
         LOGGER.warning("Falha ao ler perfil em %s: %s — recriando.", path, exc)
