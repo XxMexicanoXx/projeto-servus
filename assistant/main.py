@@ -32,8 +32,10 @@ if str(_ROOT) not in sys.path:
 from modules.action_executor import ActionConfig, ActionExecutor  # noqa: E402
 from modules.audio_input import AudioConfig, AudioInput, MicrophoneError  # noqa: E402
 from modules.intent_parser import IntentParser  # noqa: E402
+from modules.onboarding import run_onboarding_if_needed  # noqa: E402
 from modules.speech_to_text import SpeechToText, STTConfig, STTError  # noqa: E402
 from modules.text_to_speech import TextToSpeech, TTSConfig  # noqa: E402
+from modules.user_profile import UserProfile, load_profile, save_profile  # noqa: E402
 from utils.config import load_config  # noqa: E402
 from utils.logger import get_logger, setup_logging  # noqa: E402
 
@@ -53,13 +55,14 @@ class AssistantState:
 class Assistant:
     """Orquestrador principal."""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, profile: Optional[UserProfile] = None):
         self.config = config
         self.logger = get_logger(__name__)
         self._stop_event = threading.Event()
         self._state_lock = threading.Lock()
         self._state = AssistantState.IDLE
         self._tray = None  # pystray.Icon, lazy
+        self.profile = profile or UserProfile()
 
         self.audio = AudioInput(AudioConfig.from_dict(config.get("audio", {})))
         self.stt = SpeechToText(
@@ -69,6 +72,10 @@ class Assistant:
             )
         )
         self.tts = TextToSpeech(TTSConfig.from_dict(config.get("tts", {})))
+        # Pausa a escuta enquanto o assistente fala — evita auto-feedback.
+        self.tts.on_speak_start = self.audio.pause_for_tts
+        self.tts.on_speak_end = self.audio.resume_from_tts
+
         self.parser = IntentParser(
             confidence_threshold=float(
                 config.get("intents", {}).get("confidence_threshold", 0.55)
@@ -82,12 +89,20 @@ class Assistant:
             ActionConfig.from_dict(config.get("actions", {})),
             on_request_exit=self.request_exit,
             on_request_pause=self.toggle_listen,
+            user_profile=self.profile,
+            on_profile_changed=self._save_profile,
         )
 
         self._exit_phrases = [
             phrase.lower().strip()
             for phrase in config.get("general", {}).get("exit_phrases", [])
         ]
+
+    def _save_profile(self) -> None:
+        try:
+            save_profile(self.profile)
+        except Exception:
+            self.logger.exception("Falha salvando perfil do usuário")
 
     # ------------------------------------------------------------------ state
     def _set_state(self, state: str) -> None:
@@ -129,7 +144,11 @@ class Assistant:
         worker = threading.Thread(target=self._listen_loop, name="listen-loop", daemon=True)
         worker.start()
 
-        self.tts.speak("Assistente pronto.")
+        greeting_name = self.profile.display_name
+        if greeting_name:
+            self.tts.speak(f"Olá {greeting_name}, assistente pronto.")
+        else:
+            self.tts.speak("Assistente pronto.")
 
         if self.config.get("general", {}).get("show_tray_icon", True):
             self._run_tray_blocking()  # bloqueia na main thread (requirement do pystray)
@@ -326,6 +345,11 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="Lista dispositivos de áudio de entrada e sai.",
     )
     parser.add_argument("--no-tray", action="store_true", help="Não exibe ícone de bandeja.")
+    parser.add_argument(
+        "--skip-onboarding",
+        action="store_true",
+        help="Pula o diálogo de boas-vindas (útil para debug).",
+    )
     return parser.parse_args(argv)
 
 
@@ -350,7 +374,14 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.no_tray:
         config.setdefault("general", {})["show_tray_icon"] = False
 
-    assistant = Assistant(config)
+    profile = load_profile()
+    if not args.skip_onboarding:
+        try:
+            profile = run_onboarding_if_needed(profile)
+        except Exception:
+            logger.exception("Erro durante onboarding — seguindo sem nome.")
+
+    assistant = Assistant(config, profile=profile)
     return assistant.run()
 
 

@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão do instalador (ex: 1.0.0). Sem prefixo 'v'."
+        description: "Versão do instalador (ex: 1.1.0). Sem prefixo 'v'."
         required: false
-        default: "1.0.0"
+        default: "1.1.0"
 
 permissions:
   contents: write
@@ -57,6 +57,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Download Piper TTS voice (pt-BR masculina)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path voices | Out-Null
+          $base = "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium"
+          $onnx = "$base/pt_BR-faber-medium.onnx?download=true"
+          $json = "$base/pt_BR-faber-medium.onnx.json?download=true"
+          Write-Host "Baixando voz Piper..."
+          Invoke-WebRequest -Uri $onnx -OutFile "voices\pt_BR-faber-medium.onnx" -UseBasicParsing
+          Invoke-WebRequest -Uri $json -OutFile "voices\pt_BR-faber-medium.onnx.json" -UseBasicParsing
+          Get-ChildItem voices
 
       - name: Build standalone .exe (PyInstaller)
         shell: pwsh

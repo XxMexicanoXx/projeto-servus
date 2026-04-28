@@ -249,6 +249,32 @@ def _build_rules() -> List[_Rule]:
         )
     )
 
+    # --- mudar nome do usuário
+    rules.append(
+        _Rule(
+            name="mudar_nome",
+            pattern=re.compile(
+                r"^(?:meu\s+nome\s+e|me\s+chamo|pode\s+me\s+chamar\s+de|"
+                r"mud(?:e|a|ar)\s+meu\s+nome\s+(?:para|pra)|"
+                r"troc(?:a|ar|e)\s+meu\s+nome\s+(?:para|pra))\s+(?P<nome>[\w\-' ]{2,40}?)\s*\.?\s*$"
+            ),
+            extractor=lambda m: {"nome": m.group("nome").strip().title()},
+            confidence=0.9,
+        )
+    )
+    rules.append(
+        _Rule(
+            name="qual_meu_nome",
+            pattern=re.compile(
+                r"^(?:qual\s+(?:e\s+)?o?\s*meu\s+nome|"
+                r"voce\s+sabe\s+(?:o\s+)?meu\s+nome|"
+                r"como\s+(?:voce\s+)?me\s+cham[oa])\??$"
+            ),
+            extractor=lambda m: {},
+            confidence=0.85,
+        )
+    )
+
     return rules
 
 

@@ -4,8 +4,11 @@ sounddevice>=0.4.6,<1.0
 numpy>=1.24,<3.0
 
 # --- Síntese de voz (offline) ---
+# Piper TTS — voz neural pt-BR de alta qualidade (engine padrão).
+piper-tts>=1.2.0,<2.0
+onnxruntime>=1.17,<2.0
+# Fallback: pyttsx3 / SAPI5 (caso Piper falhe na instalação).
 pyttsx3>=2.90,<3.0
-# Backend SAPI5 do Windows
 pywin32>=306; sys_platform == "win32"
 comtypes>=1.2.0; sys_platform == "win32"
 
