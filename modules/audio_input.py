@@ -158,6 +158,77 @@ class AudioInput:
         with self._lock:
             return self._user_paused
 
+    # ------------------------------------------------------------------ diagnostics
+    def run_mic_diagnostic(self, seconds: float = 1.0) -> Optional[float]:
+        """Coleta blocos durante ``seconds`` e loga RMS médio/pico.
+
+        Útil pra diagnosticar microfone mudo, ganho zero, dispositivo errado.
+        Retorna o RMS médio (ou ``None`` se não rodar).
+        """
+        if not self._running:
+            return None
+        deadline = time.monotonic() + max(0.2, seconds)
+        rms_values: list[float] = []
+        peak = 0.0
+        while time.monotonic() < deadline:
+            try:
+                block = self._block_queue.get(timeout=0.2)
+            except queue.Empty:
+                continue
+            rms = float(np.sqrt(np.mean(block * block) + 1e-12))
+            rms_values.append(rms)
+            peak = max(peak, float(np.max(np.abs(block))))
+            # Também devolve o bloco pra fila pra não perder áudio
+            try:
+                self._block_queue.put_nowait(block)
+            except queue.Full:
+                pass
+        if not rms_values:
+            logger.warning("Diagnóstico de mic: nenhum bloco capturado em %.1fs.", seconds)
+            return None
+        mean_rms = float(np.mean(rms_values))
+        threshold = self.config.silence_threshold_rms
+        logger.info(
+            "Diagnóstico de mic: rms_medio=%.4f peak=%.4f threshold=%.4f (n=%d)",
+            mean_rms, peak, threshold, len(rms_values),
+        )
+        if peak < 0.001:
+            logger.warning(
+                "Microfone parece MUDO (peak=%.4f). Confira: dispositivo certo, "
+                "permissões do Windows, mute físico, ganho > 0.",
+                peak,
+            )
+        elif mean_rms > threshold * 0.8:
+            logger.warning(
+                "Ambiente barulhento (rms=%.4f >= 80%% do threshold=%.4f). "
+                "Aumente silence_threshold_rms ou use microfone direcional.",
+                mean_rms, threshold,
+            )
+        return mean_rms
+
+    def play_capture_beep(self) -> None:
+        """Toca um bipe curto pra confirmar captura.
+
+        Não-bloqueante; falhas são silenciadas. Usa sounddevice se disponível,
+        winsound como fallback no Windows.
+        """
+        try:
+            import sounddevice as sd  # type: ignore
+
+            sr = 22050
+            t = np.linspace(0, 0.08, int(sr * 0.08), endpoint=False, dtype=np.float32)
+            tone = (0.25 * np.sin(2 * np.pi * 880 * t)).astype(np.float32)
+            sd.play(tone, samplerate=sr, blocking=False)
+            return
+        except Exception:
+            pass
+        try:
+            import winsound  # type: ignore
+
+            winsound.Beep(880, 80)
+        except Exception:
+            pass
+
     # ------------------------------------------------------------------ stream
     def _on_block(self, indata, frames, time_info, status) -> None:
         if status:
