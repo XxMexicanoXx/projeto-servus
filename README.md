@@ -9,6 +9,30 @@ executa ações no PC e responde por voz.
 
 ---
 
+## Para usuários finais (instalação rápida)
+
+> Não precisa de Python, nem de conhecimento técnico.
+
+1. Vá para a página de **[Releases](https://github.com/XxMexicanoXx/projeto-servus/releases)** do projeto.
+2. Baixe `VozAssistente-Setup-1.0.0.exe` (em **Assets**).
+3. Execute o instalador — wizard padrão Windows em pt-BR.
+   - Escolha se quer atalho na Área de Trabalho e/ou iniciar com o Windows.
+4. Após instalar, o app já abre. Você ouvirá **"Assistente pronto."** e verá
+   um ícone de microfone na bandeja do sistema (canto inferior direito,
+   próximo ao relógio).
+5. Fale comandos como "que horas são", "abrir bloco de notas", "criar pasta
+   chamada teste" — veja a [lista completa abaixo](#comandos-suportados-exemplos).
+
+**Configuração:** Menu Iniciar → "VozAssistente (Editar configuração)" — abre
+o `config.json` no Notepad. Lá você muda o caminho do Chrome/Spotify para
+combinar com sua máquina.
+
+> 💡 **Não há binário pronto ainda?** Veja a seção
+> [Gerando o instalador via GitHub Actions](#gerando-o-instalador-via-github-actions)
+> ou rode `build_installer.bat` localmente.
+
+---
+
 ## Recursos
 
 - **STT offline** com [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) (modelo configurável: `tiny`/`base`/`small`/`medium`)
@@ -135,6 +159,34 @@ O instalador faz:
 
 Para mudar a versão do instalador, edite `MyAppVersion` no topo de
 [`installer.iss`](installer.iss).
+
+---
+
+## Gerando o instalador via GitHub Actions
+
+O repo tem um workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml))
+que **compila o instalador automaticamente em runner Windows** e disponibiliza
+o `.exe` para download. Útil quando você não tem Windows à mão.
+
+### Opção 1 — Build manual (qualquer hora)
+
+1. Vá em **Actions → Build Windows Installer**
+2. Clique em **Run workflow** (canto direito) → **Run workflow**
+3. Aguarde ~5–10 min
+4. Quando terminar, clique no run mais recente → role até **Artifacts** →
+   baixe `VozAssistente-Setup-1.0.0.zip` (contém o `.exe` + `SHA256SUMS.txt`)
+
+### Opção 2 — Release oficial (com tag)
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+O workflow detecta o tag `v*`, compila o instalador, **cria uma Release no
+GitHub** automaticamente e anexa o `.exe` como asset (acessível publicamente
+em `https://github.com/<usuario>/<repo>/releases`). Isso é o que usuários
+finais baixam.
 
 ---
 
