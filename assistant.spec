@@ -37,6 +37,12 @@ for _pkg in ("piper", "piper_phonemize", "onnxruntime"):
 # um config.json ao lado do .exe para sobrescrever (ver utils/config.py).
 datas += [(str(ROOT / "assistant" / "config.json"), "assistant")]
 
+# Ícone e logos (Servus)
+for _asset in ("servus.ico", "servus_256.png", "servus_64.png", "servus_512.png"):
+    _p = ROOT / "assistant" / "assets" / _asset
+    if _p.is_file():
+        datas += [(str(_p), "assistant/assets")]
+
 # NOTA: o modelo de voz Piper (.onnx + .onnx.json, ~60MB) NÃO é embutido no .exe
 # para manter o startup rápido. O installer.iss copia esses arquivos para
 # `<dir do exe>/voices/`, e o loader em modules/text_to_speech.py procura lá.
@@ -108,5 +114,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,                # opcional: caminho para um .ico
+    icon=str(ROOT / "assistant" / "assets" / "servus.ico"),
 )

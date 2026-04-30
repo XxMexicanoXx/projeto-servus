@@ -11,7 +11,7 @@
 ; ============================================================================
 
 #define MyAppName        "VozAssistente"
-#define MyAppVersion     "1.2.0"
+#define MyAppVersion     "1.2.2"
 #define MyAppPublisher   "Nicolas Victor"
 #define MyAppExeName     "VozAssistente.exe"
 #define MyAppId          "{{B5C9D8A2-7E4F-4F6B-9A1A-1234ABCD5678}"
@@ -38,7 +38,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ShowLanguageDialog=auto
-SetupIconFile=
+SetupIconFile=assistant\assets\servus.ico
 LicenseFile=
 ;ChangesEnvironment=yes
 
@@ -57,14 +57,16 @@ Source: "voices\*.onnx";      DestDir: "{app}\voices"; Flags: ignoreversion skip
 Source: "voices\*.onnx.json"; DestDir: "{app}\voices"; Flags: ignoreversion skipifsourcedoesntexist
 ; Copia o config padrão para um arquivo "modelo" ao lado do exe (para fallback portátil)
 Source: "assistant\config.json"; DestDir: "{app}"; DestName: "config.default.json"; Flags: ignoreversion
+; Ícone Servus copiado para a pasta de instalação (referência em atalhos e fallback do tray)
+Source: "assistant\assets\servus.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; A cópia editável vai para %APPDATA%\VozAssistente\config.json — feita só se não existir
 Source: "assistant\config.json"; DestDir: "{userappdata}\{#MyAppName}"; DestName: "config.json"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}";  Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"
-Name: "{autodesktop}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"; Tasks: desktopicon
-Name: "{userstartup}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"; Tasks: startupicon
+Name: "{autoprograms}\{#MyAppName}";  Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"; IconFilename: "{app}\servus.ico"
+Name: "{autodesktop}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"; Tasks: desktopicon; IconFilename: "{app}\servus.ico"
+Name: "{userstartup}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"; Tasks: startupicon; IconFilename: "{app}\servus.ico"
 Name: "{autoprograms}\{#MyAppName} (Editar configuração)"; Filename: "notepad.exe"; Parameters: """{userappdata}\{#MyAppName}\config.json"""
 
 [Run]

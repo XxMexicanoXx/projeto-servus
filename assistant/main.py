@@ -46,6 +46,30 @@ from utils.logger import get_logger, setup_logging  # noqa: E402
 APP_NAME = "VozAssistente"
 
 
+def _icon_candidates() -> list[Path]:
+    """Lugares onde procurar o ícone Servus (.ico ou .png), em ordem."""
+    candidates: list[Path] = []
+    here = Path(__file__).resolve().parent
+    candidates += [here / "assets" / "servus.ico", here / "assets" / "servus_256.png"]
+
+    # Bundle PyInstaller: assets é incluído via datas (assistant/assets)
+    bundle = getattr(sys, "_MEIPASS", None)
+    if bundle:
+        b = Path(bundle)
+        candidates += [
+            b / "assistant" / "assets" / "servus.ico",
+            b / "assistant" / "assets" / "servus_256.png",
+            b / "assets" / "servus.ico",
+        ]
+
+    # Ao lado do .exe (instalação Inno Setup)
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        candidates += [exe_dir / "servus.ico", exe_dir / "assets" / "servus.ico"]
+
+    return candidates
+
+
 class AssistantState:
     """Estados possíveis exibidos na bandeja."""
 
@@ -364,13 +388,17 @@ class Assistant:
 
     @staticmethod
     def _make_tray_image(Image, ImageDraw):
+        for path in _icon_candidates():
+            if path.is_file():
+                try:
+                    return Image.open(path).convert("RGBA")
+                except Exception:
+                    continue
+        # fallback procedural caso o .ico não seja localizado
         size = 64
-        img = Image.new("RGBA", (size, size), (30, 30, 30, 255))
+        img = Image.new("RGBA", (size, size), (15, 31, 51, 255))
         draw = ImageDraw.Draw(img)
-        # microfone estilizado
-        draw.rounded_rectangle((22, 12, 42, 38), radius=8, fill=(0, 200, 255, 255))
-        draw.rectangle((30, 38, 34, 50), fill=(0, 200, 255, 255))
-        draw.line((20, 50, 44, 50), fill=(0, 200, 255, 255), width=3)
+        draw.text((18, 8), "S", fill=(244, 197, 96, 255))
         return img
 
 

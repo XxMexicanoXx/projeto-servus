@@ -1,11 +1,16 @@
-# VozAssistente
+<div align="center">
+  <img src="assistant/assets/servus_256.png" alt="Servus" width="160"/>
+  <h1>Servus — VozAssistente</h1>
+  <p>
+    Assistente pessoal por voz <b>100% local</b> para Windows, em português brasileiro.<br/>
+    Wake word "Servus", IA gratuita Groq (opcional), STT offline e voz neural masculina.
+  </p>
+</div>
 
-Assistente pessoal por voz **100% local** para Windows, em português brasileiro.
-Roda em segundo plano, escuta comandos pelo microfone, interpreta intents,
-executa ações no PC e responde por voz.
+Roda em segundo plano, escuta comandos pelo microfone, interpreta intents
+(regex + LLM Groq como fallback), executa ações no PC e responde por voz.
 
-> **Status:** versão 1.0 — base funcional pronta. Estrutura preparada para
-> evoluir com wake word, LLM local (Ollama) e automações mais complexas.
+> **Status:** versão 1.2.2 — wake word + IA gratuita Groq + voz neural Piper.
 
 ---
 
@@ -14,7 +19,7 @@ executa ações no PC e responde por voz.
 > Não precisa de Python, nem de conhecimento técnico.
 
 1. Vá para a página de **[Releases](https://github.com/XxMexicanoXx/projeto-servus/releases)** do projeto.
-2. Baixe `VozAssistente-Setup-1.0.0.exe` (em **Assets**).
+2. Baixe `VozAssistente-Setup-1.2.2.exe` (em **Assets**).
 3. Execute o instalador — wizard padrão Windows em pt-BR.
    - Escolha se quer atalho na Área de Trabalho e/ou iniciar com o Windows.
 4. Após instalar, o app já abre. Você ouvirá **"Assistente pronto."** e verá
@@ -122,7 +127,7 @@ pyinstaller assistant.spec --clean --noconfirm
 
 Para distribuir aos usuários finais, o repo já vem com um script
 [Inno Setup](https://jrsoftware.org/isinfo.php) que empacota o `.exe` num
-**instalador padrão Windows** (`VozAssistente-Setup-1.0.0.exe`).
+**instalador padrão Windows** (`VozAssistente-Setup-1.2.2.exe`).
 
 **Pré-requisito (uma vez):** instale o
 [Inno Setup 6](https://jrsoftware.org/isdl.php) — aceita o local default
@@ -134,7 +139,7 @@ Build de tudo (PyInstaller + instalador) com um comando:
 build_installer.bat
 ```
 
-Saída: `installer_output\VozAssistente-Setup-1.0.0.exe`.
+Saída: `installer_output\VozAssistente-Setup-1.2.2.exe`.
 
 O instalador faz:
 
@@ -175,7 +180,7 @@ o `.exe` para download. Útil quando você não tem Windows à mão.
 2. Clique em **Run workflow** (canto direito) → **Run workflow**
 3. Aguarde ~5–10 min
 4. Quando terminar, clique no run mais recente → role até **Artifacts** →
-   baixe `VozAssistente-Setup-1.0.0.zip` (contém o `.exe` + `SHA256SUMS.txt`)
+   baixe `VozAssistente-Setup-1.2.2.zip` (contém o `.exe` + `SHA256SUMS.txt`)
 
 ### Opção 2 — Release oficial (com tag)
 
