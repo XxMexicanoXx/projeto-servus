@@ -224,9 +224,7 @@ class Assistant:
             self._set_state(AssistantState.ERROR)
 
     def _handle_text(self, text: str) -> None:
-        self.logger.info("Frase capturada: %r", text)
-        if self._beep_on_capture:
-            self.audio.play_capture_beep()
+        self.logger.debug("Frase capturada: %r", text)
 
         lowered = text.lower().strip()
         for phrase in self._exit_phrases:
@@ -238,10 +236,13 @@ class Assistant:
         if self._wake.enabled:
             stripped = self._wake.match(text)
             if stripped is None:
-                self.logger.info("Wake word ausente em %r — ignorando.", text)
+                self.logger.debug("Wake word ausente em %r — ignorando.", text)
                 return
             text = stripped
             self.logger.info("Wake word detectada; comando: %r", text)
+
+        if self._beep_on_capture:
+            self.audio.play_capture_beep()
 
         if not text.strip():
             self.tts.speak("Sim?")
