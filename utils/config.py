@@ -223,7 +223,7 @@ def load_config(path: Optional[str] = None) -> Dict[str, Any]:
                 ):
                     try:
                         with candidate.open("w", encoding="utf-8") as fh:
-                            json.dump(merged, fh, indent=2, ensure_ascii=False)
+                            json.dump(user_cfg, fh, indent=2, ensure_ascii=False)
                         logger.info("Config migrado e salvo em %s", candidate)
                     except OSError as exc:
                         logger.warning("Falha ao gravar config migrado: %s", exc)
